@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: SftpToDbApp
+  datasource:
+    url: jdbc:postgresql://localhost:5432/excel_db
+    username: postgres
+    password: ShivamJha91
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
+
+# Custom SFTP Configurations
+sftp:
+  host: localhost
+  port: 22
+  user: tester
+  password: password
+  poll-delay: 5000
+
+  remote:
+    directory: incoming
+    archive-directory: archive
+    error-directory: error
+
+  local:
+    directory: ./local_temp
+
+excel:
+  max-file-size: 10485760
+
+  expected-headers:
+    - Warehouse_ID
+    - LN_Order_Number
+    - Order_Type
+    - Consignee_Key
+    - LN_Order_Date
+    - Work_Center
+    - SKU
+    - LN_Line_Number
+    - Open_Qty
+    - Order_Qty
+    - Allocation_Strategy
+    - Plant_Code
+    - Project_Number
+    - MRIR
+    - Lot_Number
+    - Instructions_For_Cutting
+    - SKU_Type
