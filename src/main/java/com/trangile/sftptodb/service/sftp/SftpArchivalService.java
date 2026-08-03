@@ -1,4 +1,4 @@
-package com.trangile.sftptodb.service;
+package com.trangile.sftptodb.service.sftp;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,47 +8,43 @@ import org.springframework.integration.sftp.session.SftpSession;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.util.Objects;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class SftpArchivalService {
 
-
     private final DefaultSftpSessionFactory sessionFactory;
 
     @Value("${sftp.remote.directory}")
-    private String incomingDir;
+    private String incomingDirectory;
 
     @Value("${sftp.remote.archive-directory}")
-    private String archiveDir;
+    private String archiveDirectory;
 
     @Value("${sftp.remote.error-directory}")
-    private String errorDir;
-
+    private String errorDirectory;
 
     public void handleSuccess(File file) {
-        if (file == null) {
-            throw new IllegalArgumentException("File cannot be null");
-        }
-        moveRemoteFile(file.getName(), archiveDir);
+        moveRemoteFile(file, archiveDirectory);
     }
 
     public void handleFailure(File file) {
-        if (file == null) {
-            throw new IllegalArgumentException("File cannot be null");
-        }
-        moveRemoteFile(file.getName(), errorDir);
+        moveRemoteFile(file, errorDirectory);
     }
 
-    private void moveRemoteFile(String fileName, String destinationDir) {
+    private void moveRemoteFile(File file, String destinationDirectory) {
 
-        String source = buildPath(incomingDir, fileName);
-        String target = buildPath(destinationDir, fileName);
+        Objects.requireNonNull(file, "File cannot be null");
+
+        String source = buildPath(incomingDirectory, file.getName());
+        String target = buildPath(destinationDirectory, file.getName());
 
         try (SftpSession session = sessionFactory.getSession()) {
+
             log.info("========================================");
-            log.info("Moving remote file");
+            log.info("Moving Remote File");
             log.info("Source      : {}", source);
             log.info("Destination : {}", target);
 
@@ -57,23 +53,23 @@ public class SftpArchivalService {
             log.info("Remote file moved successfully.");
             log.info("========================================");
 
-        } catch (Exception e) {
+        } catch (Exception ex) {
 
-            log.error("Failed to move remote file [{}] from {} to {}",
-                    fileName, source, target, e);
+            log.error("Failed to move remote file [{}]", file.getName(), ex);
 
             throw new RuntimeException(
-                    "Failed to move remote file from " + source + " to " + target,
-                    e
+                    "Failed to move remote file : " + file.getName(),
+                    ex
             );
         }
     }
 
+    private String buildPath(String directory, String fileName) {
 
-    private String buildPath(String dir, String fileName) {
+        directory = directory
+                .replace("\\", "/")
+                .replaceAll("/+$", "");
 
-        dir = dir.replace("\\", "/").replaceAll("/+$", "");
-
-        return dir + "/" + fileName;
+        return directory + "/" + fileName;
     }
 }
