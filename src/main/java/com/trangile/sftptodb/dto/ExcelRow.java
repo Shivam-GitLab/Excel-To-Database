@@ -3,7 +3,8 @@ package com.trangile.sftptodb.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -14,17 +15,17 @@ public class ExcelRow {
     private String lnOrderNumber;
     private String orderType;
     private String consigneeKey;
-    private LocalDate orderDate;
+    private LocalDateTime orderDate;
     private String workCenter;
 
     // Order Line
     private String sku;
     private String lineNumber;
-    private Integer externLineNo;
+    private String externLineNo;
 
     // Quantity
-    private Integer openQty;
-    private Integer orderQty;
+    private BigDecimal openQty;
+    private BigDecimal orderQty;
 
     // Allocation
     private String allocationStrategy;

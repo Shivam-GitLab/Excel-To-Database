@@ -1,7 +1,6 @@
 package com.trangile.sftptodb.service.order;
 
 import com.trangile.sftptodb.dto.ExcelRow;
-import com.trangile.sftptodb.entity.OrderDetailId;
 import com.trangile.sftptodb.entity.OrderDetails;
 import com.trangile.sftptodb.repository.OrderDetailsRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +23,8 @@ public class OrderDetailService {
 
             OrderDetails detail = new OrderDetails();
 
-            // Composite Primary Key
-            OrderDetailId id = new OrderDetailId();
-            id.setOrderKey(generatedOrderKey);
-            id.setOrderLineNumber(row.getLineNumber());
-
-            detail.setId(id);
+            detail.setOrderKey(generatedOrderKey);
+            detail.setOrderLineNumber(row.getLineNumber());
 
             detail.setWhseId(row.getWarehouseId());
             detail.setStorerKey("GA");
@@ -37,6 +32,7 @@ public class OrderDetailService {
             detail.setExternLineNo(row.getExternLineNo());
 
             detail.setSku(row.getSku());
+
             detail.setOpenQty(row.getOpenQty());
             detail.setOriginalQty(row.getOrderQty());
 
@@ -49,7 +45,7 @@ public class OrderDetailService {
             detail.setLotTable03(row.getMrir());
             detail.setLotTable07(row.getLotNumber());
 
-            detail.setPikingInstruction(row.getInstructionForCutting());
+            detail.setPickingInstructions(row.getInstructionForCutting());
 
             details.add(detail);
         }

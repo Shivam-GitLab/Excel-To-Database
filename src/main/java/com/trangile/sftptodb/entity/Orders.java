@@ -7,7 +7,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -15,28 +15,28 @@ import java.time.LocalDate;
 @Table(name = "orders")
 public class Orders {
 
-    @Column(name = "whseid", nullable = false)
+    @Column(name = "WHSEID")
     private String whseId;
 
-    @Column(name = "type", nullable = false)
-    private String type;              // STANDARD
+    @Column(name = "TYPE", nullable = false)
+    private String type;
 
-    @Column(name = "storerkey", nullable = false)
-    private String storerKey;         // GA
+    @Column(name = "STORERKEY", nullable = false)
+    private String storerKey;
 
     @Id
-    @Column(name = "orderkey", nullable = false, unique = true)
-    private String orderKey;          // LN100001_1
+    @Column(name = "ORDERKEY", nullable = false)
+    private String orderKey;
 
-    @Column(name = "orderdate")
-    private LocalDate orderDate;
+    @Column(name = "ORDERDATE", nullable = false)
+    private LocalDateTime orderDate;
 
-    @Column(name = "externorderkey2")
-    private String externOrderKey2;   // Original LN Order Number
+    @Column(name = "EXTERNALORDERKEY2")
+    private String externalOrderKey2;
 
-    @Column(name = "consigneekey")
+    @Column(name = "CONSIGNEEKEY", nullable = false)
     private String consigneeKey;
 
-    @Column(name = "susr1")
-    private String susr1;             // Work Center
+    @Column(name = "SUSR1")
+    private String susr1;
 }

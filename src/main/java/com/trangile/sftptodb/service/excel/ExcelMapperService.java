@@ -4,7 +4,9 @@ import com.trangile.sftptodb.dto.ExcelRow;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -12,6 +14,7 @@ import java.time.format.DateTimeParseException;
 public class ExcelMapperService {
 
     private final DataFormatter formatter = new DataFormatter();
+
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
@@ -19,7 +22,6 @@ public class ExcelMapperService {
 
         ExcelRow excelRow = new ExcelRow();
 
-        // Header
         excelRow.setWarehouseId(getStringValue(row.getCell(0)));
         excelRow.setLnOrderNumber(getStringValue(row.getCell(1)));
         excelRow.setOrderType(getStringValue(row.getCell(2)));
@@ -27,15 +29,13 @@ public class ExcelMapperService {
         excelRow.setOrderDate(getDateValue(row.getCell(4)));
         excelRow.setWorkCenter(getStringValue(row.getCell(5)));
 
-        // Detail
         excelRow.setSku(getStringValue(row.getCell(6)));
         excelRow.setLineNumber(getStringValue(row.getCell(7)));
 
-        excelRow.setExternLineNo((int) getLongValue(row.getCell(8), rowNumber));
+        excelRow.setExternLineNo(getStringValue(row.getCell(8)));
 
-        // Agar Excel me Extern Line No alag column hai to uska field DTO me add karo.
-        excelRow.setOpenQty((int) getLongValue(row.getCell(9), rowNumber));
-        excelRow.setOrderQty((int) getLongValue(row.getCell(10), rowNumber));
+        excelRow.setOpenQty(getDecimalValue(row.getCell(9), rowNumber));
+        excelRow.setOrderQty(getDecimalValue(row.getCell(10), rowNumber));
 
         excelRow.setAllocationStrategy(getStringValue(row.getCell(11)));
         excelRow.setPlantCode(getStringValue(row.getCell(12)));
@@ -44,24 +44,27 @@ public class ExcelMapperService {
         excelRow.setLotNumber(getStringValue(row.getCell(15)));
         excelRow.setInstructionForCutting(getStringValue(row.getCell(16)));
 
-        // Grouping only
-        excelRow.setSkuType(getStringValue(row.getCell(18)).trim().toUpperCase());
+        excelRow.setSkuType(getStringValue(row.getCell(17)).trim().toUpperCase());
 
         return excelRow;
     }
 
-    private long getLongValue(Cell cell, int rowNumber) {
+    private BigDecimal getDecimalValue(Cell cell, int rowNumber) {
 
-        if (cell == null) return 0L;
+        if (cell == null) {
+            return BigDecimal.ZERO;
+        }
 
         String value = formatter.formatCellValue(cell).trim();
 
-        if (value.isBlank()) return 0L;
+        if (value.isBlank()) {
+            return BigDecimal.ZERO;
+        }
 
         value = value.replace(",", "");
 
         try {
-            return Long.parseLong(value);
+            return new BigDecimal(value);
         } catch (NumberFormatException ex) {
             throw new RuntimeException(
                     "Invalid numeric value '" + value + "' at row " + rowNumber);
@@ -72,18 +75,16 @@ public class ExcelMapperService {
         return cell == null ? "" : formatter.formatCellValue(cell).trim();
     }
 
-
-    private LocalDate getDateValue(Cell cell) {
+    private LocalDateTime getDateValue(Cell cell) {
 
         if (cell == null) {
             return null;
         }
 
-        // Excel Date Cell
         if (cell.getCellType() == CellType.NUMERIC &&
                 DateUtil.isCellDateFormatted(cell)) {
 
-            return cell.getLocalDateTimeCellValue().toLocalDate();
+            return cell.getLocalDateTimeCellValue();
         }
 
         String value = formatter.formatCellValue(cell).trim();
@@ -93,10 +94,11 @@ public class ExcelMapperService {
         }
 
         try {
-            return LocalDate.parse(value, DATE_FORMATTER);
+            LocalDate date = LocalDate.parse(value, DATE_FORMATTER);
+            return date.atStartOfDay();
         } catch (DateTimeParseException ex) {
-            throw new RuntimeException("Invalid date format: " + value +
-                    ". Expected format is dd-MM-yyyy");
+            throw new RuntimeException(
+                    "Invalid date format: " + value + ". Expected format is dd-MM-yyyy");
         }
     }
 }

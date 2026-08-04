@@ -4,6 +4,7 @@ import com.trangile.sftptodb.config.ExcelProperties;
 import com.trangile.sftptodb.exception.FileValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.util.Locale;
 
 import java.io.File;
 
@@ -27,7 +28,7 @@ public class ExcelValidatorService {
         if (!file.canRead())
             throw new FileValidationException("File cannot be read.");
 
-        if (!file.getName().toLowerCase().endsWith(".xlsx"))
+        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".xlsx"))
             throw new FileValidationException("Only .xlsx files are allowed.");
 
         if (file.length() == 0)

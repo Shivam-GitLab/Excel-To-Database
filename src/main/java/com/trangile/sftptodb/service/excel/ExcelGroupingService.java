@@ -13,33 +13,24 @@ public class ExcelGroupingService {
 
     public Map<String, List<ExcelRow>> groupByGeneratedOrderKey(List<ExcelRow> rows) {
 
-        // (LN Order + SKU Type) -> Generated Order Key
-        Map<String, String> generatedKeys = new LinkedHashMap<>();
-
-        // LN Order -> Counter
-        Map<String, Integer> counters = new LinkedHashMap<>();
-
-        return rows.stream()
-                .collect(Collectors.groupingBy(row -> {
+        return rows.stream().collect(Collectors.groupingBy(
+                row -> {
 
                     String lnOrder = row.getLnOrderNumber();
                     String skuType = row.getSkuType();
 
-                    String mapKey = lnOrder + "_" + skuType;
+                    String suffix = switch (skuType.toUpperCase()) {
+                        case "NORMAL" -> "N";
+                        case "ROD" -> "R";
+                        case "SHEET" -> "S";
+                        default -> "O"; // Other
+                    };
 
-                    if (!generatedKeys.containsKey(mapKey)) {
+                    return lnOrder + "_" + suffix;
 
-                        int counter = counters.getOrDefault(lnOrder, 0) + 1;
-
-                        counters.put(lnOrder, counter);
-
-                        generatedKeys.put(
-                                mapKey,
-                                lnOrder + "_" + counter
-                        );
-                    }
-
-                    return generatedKeys.get(mapKey);
-                }));
+                },
+                LinkedHashMap::new,
+                Collectors.toList()
+        ));
     }
 }

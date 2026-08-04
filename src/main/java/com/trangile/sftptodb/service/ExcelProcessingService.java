@@ -30,7 +30,7 @@ public class ExcelProcessingService {
     @Transactional(rollbackFor = Exception.class)
     public void processExcelFile(File localFile) throws Exception {
 
-        // Validate
+        // Validate File
         excelValidatorService.validateFile(localFile);
 
         // Read Excel
@@ -51,22 +51,23 @@ public class ExcelProcessingService {
         for (Map.Entry<String, List<ExcelRow>> entry : groupedData.entrySet()) {
 
             String generatedOrderKey = entry.getKey();
-            List<ExcelRow> groupRows = entry.getValue();
+            List<ExcelRow> orderRows = entry.getValue();
 
-            ExcelRow first = groupRows.get(0);
+//            ExcelRow firstRow = orderRows.get(0);
+            ExcelRow firstRow = orderRows.getFirst();
 
             orderService.createOrder(
-                    first.getWarehouseId(),
+                    firstRow.getWarehouseId(),
                     generatedOrderKey,
-                    first.getOrderType(),
-                    first.getOrderDate(),
-                    first.getWorkCenter(),
-                    first.getConsigneeKey(),
-                    first.getLnOrderNumber()
+                    firstRow.getOrderType(),
+                    firstRow.getOrderDate(),
+                    firstRow.getWorkCenter(),
+                    firstRow.getConsigneeKey(),
+                    firstRow.getLnOrderNumber()
             );
 
             orderDetailService.saveOrderDetails(
-                    groupRows,
+                    orderRows,
                     generatedOrderKey
             );
         }
