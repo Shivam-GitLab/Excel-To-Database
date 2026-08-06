@@ -21,6 +21,7 @@ spring:
 
 server:
   port: 8080
+  address: 127.0.0.1
 
 sftp:
   host: localhost
@@ -30,9 +31,9 @@ sftp:
   poll-delay: 5000
 
   remote:
-    directory: incoming
-    archive-directory: archive
-    error-directory: error
+    directory: INPUT
+    archive-directory: WMS_ARCHIVE
+    error-directory: WMS_ERROR
 
   local:
     directory: ./local_temp
