@@ -1,12 +1,11 @@
 package com.trangile.sftptodb.service.order;
 
-import com.trangile.sftptodb.dto.ExcelRow;
+import com.trangile.sftptodb.entity.ExcelStaging;
 import com.trangile.sftptodb.entity.OrderDetails;
 import com.trangile.sftptodb.repository.OrderDetailsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -15,40 +14,39 @@ public class OrderDetailService {
 
     private final OrderDetailsRepository orderDetailsRepository;
 
-    public void saveOrderDetails(List<ExcelRow> rows, String generatedOrderKey) {
+    public void saveOrderDetails(List<ExcelStaging> rows,
+                                 String generatedOrderKey) {
 
-        List<OrderDetails> details = new ArrayList<>();
+        List<OrderDetails> details = rows.stream()
+                .map(row -> OrderDetails.builder()
 
-        for (ExcelRow row : rows) {
+                        .orderKey(generatedOrderKey)
+                        .orderLineNumber(row.getLineNumber())
 
-            OrderDetails detail = new OrderDetails();
+                        .whseId(row.getWarehouseId())
+                        .storerKey("GA")
 
-            detail.setOrderKey(generatedOrderKey);
-            detail.setOrderLineNumber(row.getLineNumber());
+                        .externLineNo(row.getExternLineNo())
 
-            detail.setWhseId(row.getWarehouseId());
-            detail.setStorerKey("GA");
+                        .sku(row.getSku())
 
-            detail.setExternLineNo(row.getExternLineNo());
+                        .openQty(row.getOpenQty())
+                        .originalQty(row.getOrderQty())
 
-            detail.setSku(row.getSku());
+                        .uom("EA")
 
-            detail.setOpenQty(row.getOpenQty());
-            detail.setOriginalQty(row.getOrderQty());
+                        .newAllocationStrategy(row.getAllocationStrategy())
+                        .status("02")
+                        .lotTable01(row.getPlantCode())
+                        .lotTable02(row.getProjectNumber())
+                        .lotTable03(row.getMrir())
+                        .lotTable07(row.getLotNumber())
 
-            detail.setUom("EA");
+                        .pickingInstructions(row.getInstructionForCutting())
 
-            detail.setNewAllocationStrategy(row.getAllocationStrategy());
+                        .build())
 
-            detail.setLotTable01(row.getPlantCode());
-            detail.setLotTable02(row.getProjectNumber());
-            detail.setLotTable03(row.getMrir());
-            detail.setLotTable07(row.getLotNumber());
-
-            detail.setPickingInstructions(row.getInstructionForCutting());
-
-            details.add(detail);
-        }
+                .toList();
 
         orderDetailsRepository.saveAll(details);
     }

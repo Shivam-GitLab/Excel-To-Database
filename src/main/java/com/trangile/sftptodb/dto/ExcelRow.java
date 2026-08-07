@@ -31,7 +31,7 @@ public class ExcelRow {
     private String allocationStrategy;
 
     // Lot Information
-    private String plantCode;
+    private String uom;
     private String projectNumber;
     private String mrir;
     private String lotNumber;

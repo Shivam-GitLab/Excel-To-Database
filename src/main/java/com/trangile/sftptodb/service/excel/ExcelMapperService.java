@@ -1,6 +1,8 @@
 package com.trangile.sftptodb.service.excel;
 
 import com.trangile.sftptodb.dto.ExcelRow;
+import com.trangile.sftptodb.enums.SkuType;
+import com.trangile.sftptodb.exception.FileValidationException;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 
@@ -9,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 
 @Service
 public class ExcelMapperService {
@@ -18,40 +21,76 @@ public class ExcelMapperService {
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
+    // Excel Column Index
+    private static final int WAREHOUSE_ID = 0;
+    private static final int LN_ORDER_NUMBER = 1;
+    private static final int ORDER_TYPE = 2;
+    private static final int CONSIGNEE_KEY = 3;
+    private static final int ORDER_DATE = 4;
+    private static final int WORK_CENTER = 5;
+    private static final int SKU = 6;
+    private static final int LINE_NUMBER = 7;
+    private static final int EXTERN_LINE_NO = 8;
+    private static final int OPEN_QTY = 9;
+    private static final int ORDER_QTY = 10;
+    private static final int ALLOCATION_STRATEGY = 11;
+    private static final int PLANT_CODE = 12;
+    private static final int PROJECT_NUMBER = 13;
+    private static final int MRIR = 14;
+    private static final int LOT_NUMBER = 15;
+    private static final int INSTRUCTION_FOR_CUTTING = 16;
+    private static final int SKU_TYPE = 17;
+
     public ExcelRow map(Row row, int rowNumber) {
 
-        ExcelRow excelRow = new ExcelRow();
+        ExcelRow dto = new ExcelRow();
 
-        excelRow.setWarehouseId(getStringValue(row.getCell(0)));
-        excelRow.setLnOrderNumber(getStringValue(row.getCell(1)));
-        excelRow.setOrderType(getStringValue(row.getCell(2)));
-        excelRow.setConsigneeKey(getStringValue(row.getCell(3)));
-        excelRow.setOrderDate(getDateValue(row.getCell(4)));
-        excelRow.setWorkCenter(getStringValue(row.getCell(5)));
+        // Order Header
+        dto.setWarehouseId(getStringValue(getCell(row, WAREHOUSE_ID)));
+        dto.setLnOrderNumber(getStringValue(getCell(row, LN_ORDER_NUMBER)));
+        dto.setOrderType(getStringValue(getCell(row, ORDER_TYPE)));
+        dto.setConsigneeKey(getStringValue(getCell(row, CONSIGNEE_KEY)));
+        dto.setOrderDate(getDateValue(getCell(row, ORDER_DATE), rowNumber));
+        dto.setWorkCenter(getStringValue(getCell(row, WORK_CENTER)));
 
-        excelRow.setSku(getStringValue(row.getCell(6)));
-        excelRow.setLineNumber(getStringValue(row.getCell(7)));
+        // Order Line
+        dto.setSku(getStringValue(getCell(row, SKU)));
+        dto.setLineNumber(getStringValue(getCell(row, LINE_NUMBER)));
+        dto.setExternLineNo(getStringValue(getCell(row, EXTERN_LINE_NO)));
 
-        excelRow.setExternLineNo(getStringValue(row.getCell(8)));
+        // Quantity
+        dto.setOpenQty(getDecimalValue(getCell(row, OPEN_QTY), rowNumber));
+        dto.setOrderQty(getDecimalValue(getCell(row, ORDER_QTY), rowNumber));
 
-        excelRow.setOpenQty(getDecimalValue(row.getCell(9), rowNumber));
-        excelRow.setOrderQty(getDecimalValue(row.getCell(10), rowNumber));
+        // Allocation
+        dto.setAllocationStrategy(getStringValue(getCell(row, ALLOCATION_STRATEGY)));
 
-        excelRow.setAllocationStrategy(getStringValue(row.getCell(11)));
-        excelRow.setPlantCode(getStringValue(row.getCell(12)));
-        excelRow.setProjectNumber(getStringValue(row.getCell(13)));
-        excelRow.setMrir(getStringValue(row.getCell(14)));
-        excelRow.setLotNumber(getStringValue(row.getCell(15)));
-        excelRow.setInstructionForCutting(getStringValue(row.getCell(16)));
+        // Lot Information
+        dto.setPlantCode(getStringValue(getCell(row, PLANT_CODE)));
+        dto.setProjectNumber(getStringValue(getCell(row, PROJECT_NUMBER)));
+        dto.setMrir(getStringValue(getCell(row, MRIR)));
+        dto.setLotNumber(getStringValue(getCell(row, LOT_NUMBER)));
 
-        excelRow.setSkuType(getStringValue(row.getCell(17)).trim().toUpperCase());
+        // Cutting
+        dto.setInstructionForCutting(getStringValue(getCell(row, INSTRUCTION_FOR_CUTTING)));
 
-        return excelRow;
+        // SKU Type
+        dto.setSkuType(getSkuType(getStringValue(getCell(row, SKU_TYPE)), rowNumber));
+
+        return dto;
+    }
+
+    private Cell getCell(Row row, int index) {
+        return row.getCell(index, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+    }
+
+    private String getStringValue(Cell cell) {
+        return formatter.formatCellValue(cell).trim();
     }
 
     private BigDecimal getDecimalValue(Cell cell, int rowNumber) {
 
-        if (cell == null) {
+        if (cell == null || cell.getCellType() == CellType.BLANK) {
             return BigDecimal.ZERO;
         }
 
@@ -65,19 +104,18 @@ public class ExcelMapperService {
 
         try {
             return new BigDecimal(value);
+
         } catch (NumberFormatException ex) {
-            throw new RuntimeException(
-                    "Invalid numeric value '" + value + "' at row " + rowNumber);
+            throw new FileValidationException(
+                    "Invalid numeric value '" + value +
+                            "' at Excel row " + rowNumber
+            );
         }
     }
 
-    private String getStringValue(Cell cell) {
-        return cell == null ? "" : formatter.formatCellValue(cell).trim();
-    }
+    private LocalDateTime getDateValue(Cell cell, int rowNumber) {
 
-    private LocalDateTime getDateValue(Cell cell) {
-
-        if (cell == null) {
+        if (cell == null || cell.getCellType() == CellType.BLANK) {
             return null;
         }
 
@@ -94,11 +132,38 @@ public class ExcelMapperService {
         }
 
         try {
+
             LocalDate date = LocalDate.parse(value, DATE_FORMATTER);
             return date.atStartOfDay();
+
         } catch (DateTimeParseException ex) {
-            throw new RuntimeException(
-                    "Invalid date format: " + value + ". Expected format is dd-MM-yyyy");
+
+            throw new FileValidationException(
+                    "Invalid date '" + value +
+                            "' at Excel row " + rowNumber +
+                            ". Expected format: dd-MM-yyyy"
+            );
+        }
+    }
+
+    private String getSkuType(String skuType, int rowNumber) {
+
+        if (skuType.isBlank()) {
+            return SkuType.NORMAL.name();
+        }
+
+        try {
+
+            return SkuType.valueOf(skuType.toUpperCase()).name();
+
+        } catch (IllegalArgumentException ex) {
+
+            throw new FileValidationException(
+                    "Invalid SKU Type '" + skuType +
+                            "' at Excel row " + rowNumber +
+                            ". Allowed values are: " +
+                            Arrays.toString(SkuType.values())
+            );
         }
     }
 }

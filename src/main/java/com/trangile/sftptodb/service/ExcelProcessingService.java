@@ -2,19 +2,16 @@ package com.trangile.sftptodb.service;
 
 import com.trangile.sftptodb.dto.ExcelRow;
 import com.trangile.sftptodb.exception.FileValidationException;
-import com.trangile.sftptodb.service.excel.ExcelGroupingService;
 import com.trangile.sftptodb.service.excel.ExcelReaderService;
 import com.trangile.sftptodb.service.excel.ExcelValidatorService;
-import com.trangile.sftptodb.service.order.OrderDetailService;
-import com.trangile.sftptodb.service.order.OrderService;
+import com.trangile.sftptodb.service.staging.ExcelStagingService;
+import com.trangile.sftptodb.service.staging.StagingProcessingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -23,12 +20,10 @@ public class ExcelProcessingService {
 
     private final ExcelValidatorService excelValidatorService;
     private final ExcelReaderService excelReaderService;
-    private final ExcelGroupingService excelGroupingService;
-    private final OrderService orderService;
-    private final OrderDetailService orderDetailService;
+    private final ExcelStagingService excelStagingService;
+    private final StagingProcessingService stagingProcessingService;
 
-    @Transactional(rollbackFor = Exception.class)
-    public void processExcelFile(File localFile) throws Exception {
+    public void processExcelFile(File localFile) {
 
         // Validate File
         excelValidatorService.validateFile(localFile);
@@ -43,35 +38,14 @@ public class ExcelProcessingService {
             throw new FileValidationException("No valid records found.");
         }
 
-        // Group by Generated Order Key
-        Map<String, List<ExcelRow>> groupedData =
-                excelGroupingService.groupByGeneratedOrderKey(rows);
+        // Phase 1 : Save into Staging
+        excelStagingService.save(rows, localFile.getName());
 
-        // Save Orders & Order Details
-        for (Map.Entry<String, List<ExcelRow>> entry : groupedData.entrySet()) {
+        log.info("Excel data successfully saved into excel_staging table.");
 
-            String generatedOrderKey = entry.getKey();
-            List<ExcelRow> orderRows = entry.getValue();
+        // Phase 2 : Process Staging
+        stagingProcessingService.processPendingRecords();
 
-//            ExcelRow firstRow = orderRows.get(0);
-            ExcelRow firstRow = orderRows.getFirst();
-
-            orderService.createOrder(
-                    firstRow.getWarehouseId(),
-                    generatedOrderKey,
-                    firstRow.getOrderType(),
-                    firstRow.getOrderDate(),
-                    firstRow.getWorkCenter(),
-                    firstRow.getConsigneeKey(),
-                    firstRow.getLnOrderNumber()
-            );
-
-            orderDetailService.saveOrderDetails(
-                    orderRows,
-                    generatedOrderKey
-            );
-        }
-
-        log.info("File processed successfully : {}", localFile.getName());
+        log.info("Orders and Order Details created successfully.");
     }
 }

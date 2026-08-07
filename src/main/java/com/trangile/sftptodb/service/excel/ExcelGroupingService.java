@@ -1,6 +1,6 @@
 package com.trangile.sftptodb.service.excel;
 
-import com.trangile.sftptodb.dto.ExcelRow;
+import com.trangile.sftptodb.entity.ExcelStaging;
 import com.trangile.sftptodb.enums.SkuType;
 import org.springframework.stereotype.Service;
 
@@ -12,19 +12,33 @@ import java.util.stream.Collectors;
 @Service
 public class ExcelGroupingService {
 
-    public Map<String, List<ExcelRow>> groupByGeneratedOrderKey(List<ExcelRow> rows) {
+    public Map<String, List<ExcelStaging>> groupByGeneratedOrderKey(List<ExcelStaging> rows) {
 
         return rows.stream().collect(Collectors.groupingBy(
                 row -> {
 
                     String lnOrder = row.getLnOrderNumber();
+
                     String skuType = row.getSkuType();
 
-                    String suffix = switch (SkuType.valueOf(skuType.toUpperCase())) {
-                        case NORMAL -> "N";
-                        case ROD -> "R";
-                        case SHEET -> "S";
-                    };
+                    if (skuType == null || skuType.isBlank()) {
+                        skuType = "NORMAL";
+                    }
+
+                    String suffix;
+
+                    try {
+                        suffix = switch (SkuType.valueOf(skuType.toUpperCase())) {
+                            case NORMAL -> "N";
+                            case ROD -> "R";
+                            case SHEET -> "S";
+                        };
+                    } catch (IllegalArgumentException ex) {
+                        throw new IllegalArgumentException(
+                                "Invalid SKU Type : " + skuType +
+                                        ". Allowed values are NORMAL, ROD, SHEET."
+                        );
+                    }
 
                     return lnOrder + "_" + suffix;
 

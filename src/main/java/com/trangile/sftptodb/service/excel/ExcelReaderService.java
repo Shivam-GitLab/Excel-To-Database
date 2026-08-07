@@ -3,23 +3,39 @@ package com.trangile.sftptodb.service.excel;
 import com.trangile.sftptodb.dto.ExcelRow;
 import com.trangile.sftptodb.exception.FileValidationException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ExcelReaderService {
 
     private final ExcelMapperService excelMapperService;
 
-    public List<ExcelRow> readExcel(File file) throws Exception {
+    private static final DataFormatter FORMATTER = new DataFormatter();
 
-        List<ExcelRow> rows = new ArrayList<>();
+    public List<ExcelRow> readExcel(File file) {
+
+        if (file == null || !file.exists()) {
+            throw new FileValidationException("Excel file not found.");
+        }
+
+        if (file.length() == 0) {
+            throw new FileValidationException("Excel file is empty.");
+        }
+
+        List<ExcelRow> excelRows = new ArrayList<>();
+
+        log.info("Reading Excel File : {}", file.getName());
 
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -30,7 +46,7 @@ public class ExcelReaderService {
 
             Sheet sheet = workbook.getSheetAt(0);
 
-            if (sheet.getLastRowNum() == 0) {
+            if (sheet.getPhysicalNumberOfRows() <= 1) {
                 throw new FileValidationException("Excel contains no data.");
             }
 
@@ -42,20 +58,36 @@ public class ExcelReaderService {
                     continue;
                 }
 
-                rows.add(excelMapperService.map(row, i + 1));
-            }
-        }
+                try {
+                    ExcelRow dto = excelMapperService.map(row, i + 1);
+                    excelRows.add(dto);
 
-        return rows;
+                } catch (Exception ex) {
+
+                    throw new FileValidationException(
+                            "Error while reading Excel at Row : " + (i + 1)
+                                    + ". " + ex.getMessage()
+                    );
+                }
+            }
+
+            log.info("Total Excel Rows Read : {}", excelRows.size());
+
+            return excelRows;
+
+        } catch (IOException | EncryptedDocumentException ex) {
+
+            log.error("Unable to read Excel file.", ex);
+
+            throw new FileValidationException("Unable to read Excel file.");
+        }
     }
 
     private boolean isRowEmpty(Row row) {
 
-        DataFormatter formatter = new DataFormatter();
-
         for (int i = 0; i < row.getLastCellNum(); i++) {
 
-            if (!formatter.formatCellValue(row.getCell(i)).trim().isEmpty()) {
+            if (!FORMATTER.formatCellValue(row.getCell(i)).trim().isEmpty()) {
                 return false;
             }
         }

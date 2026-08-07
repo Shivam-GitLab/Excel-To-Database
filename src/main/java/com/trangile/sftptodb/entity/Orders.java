@@ -4,11 +4,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
 @Entity
@@ -30,6 +32,9 @@ public class Orders {
 
     @Column(name = "ORDERDATE", nullable = false)
     private LocalDateTime orderDate;
+
+    @Column(name = "STATUS", nullable = false)
+    private String status;
 
     @Column(name = "EXTERNALORDERKEY2")
     private String externalOrderKey2;

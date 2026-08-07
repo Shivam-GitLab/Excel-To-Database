@@ -1,13 +1,15 @@
 package com.trangile.sftptodb.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "orderdetail")
 @IdClass(OrderDetailId.class)
@@ -44,6 +46,9 @@ public class OrderDetails {
 
     @Column(name = "NEWALLOCATIONSTRATEGY")
     private String newAllocationStrategy;
+
+    @Column(name = "STATUS", nullable = false)
+    private String status;
 
     @Column(name = "LOTTABLE01", nullable = false)
     private String lotTable01;

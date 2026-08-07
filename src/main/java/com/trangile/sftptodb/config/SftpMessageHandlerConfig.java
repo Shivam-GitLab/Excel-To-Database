@@ -2,6 +2,7 @@ package com.trangile.sftptodb.config;
 
 import com.trangile.sftptodb.service.ExcelProcessingService;
 import com.trangile.sftptodb.service.sftp.SftpArchivalService;
+import com.trangile.sftptodb.service.staging.StagingProcessingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,7 @@ public class SftpMessageHandlerConfig {
     @ServiceActivator(inputChannel = "sftpChannel")
     public MessageHandler fileHandler(
             ExcelProcessingService excelProcessingService,
+            StagingProcessingService stagingProcessingService,
             SftpArchivalService sftpArchivalService) {
 
         return message -> {
@@ -27,11 +29,18 @@ public class SftpMessageHandlerConfig {
 
             try {
 
-                log.info("Processing file : {}", file.getName());
+                log.info("Started processing file : {}", file.getName());
 
+                // Phase-1 : Excel -> Staging
                 excelProcessingService.processExcelFile(file);
 
+                // Phase-2 : Staging -> Orders -> OrderDetails
+                stagingProcessingService.processPendingRecords();
+
+                // Archive on Success
                 sftpArchivalService.handleSuccess(file);
+
+                log.info("File processed successfully : {}", file.getName());
 
             } catch (Exception ex) {
 
@@ -42,9 +51,14 @@ public class SftpMessageHandlerConfig {
             } finally {
 
                 try {
+
                     Files.deleteIfExists(file.toPath());
-                } catch (Exception e) {
-                    log.error("Failed to delete local file : {}", file.getName(), e);
+
+                    log.info("Local file deleted : {}", file.getName());
+
+                } catch (Exception ex) {
+
+                    log.error("Unable to delete local file : {}", file.getName(), ex);
                 }
             }
         };

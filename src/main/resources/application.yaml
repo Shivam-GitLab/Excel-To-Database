@@ -2,7 +2,6 @@ spring:
   application:
     name: SftpToDbApp
 
-
   datasource:
     url: jdbc:sqlserver://localhost:1433;databaseName=excel_to_db;encrypt=true;trustServerCertificate=true
     username: sa
@@ -12,40 +11,53 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
     open-in-view: false
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.SQLServerDialect
         format_sql: true
 
 server:
-  port: 8080
   address: 127.0.0.1
+  port: 8080
 
+# ==========================================================
+# SFTP Configuration
+# ==========================================================
 sftp:
   host: localhost
   port: 22
   user: tester
   password: password
+
+  known-hosts: C:/Users/shivam.trangile/.ssh/known_hosts
+
+  remote-input-directory: /INPUT
+  remote-archive-directory: /WMS_ARCHIVE
+  remote-error-directory: /WMS_ERROR
+
+  local-download-directory: C:/SFTP/LOCAL_FILE_DOWNLOAD
+
+  file-pattern: "*.xlsx"
   poll-delay: 5000
+  max-messages-per-poll: 5
 
-  remote:
-    directory: INPUT
-    archive-directory: WMS_ARCHIVE
-    error-directory: WMS_ERROR
-
-  local:
-    directory: ./local_temp
-
+# ==========================================================
+# Excel Configuration
+# ==========================================================
 excel:
   max-file-size: 10485760
 
+# ==========================================================
+# Logging
+# ==========================================================
 logging:
   level:
     root: INFO
     com.trangile.sftptodb: INFO
-    org.springframework.integration: INFO
-    org.springframework.integration.sftp: INFO
-    org.apache.sshd: WARN
+    org.springframework.integration: DEBUG
+    org.springframework.integration.sftp: DEBUG
+    org.springframework.integration.file: DEBUG
+    org.apache.sshd: INFO
     org.hibernate.SQL: DEBUG
